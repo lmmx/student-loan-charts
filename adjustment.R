@@ -18,7 +18,55 @@ getSymbols("CPIAUCSL", src='FRED') #Consumer Price Index for All Urban Consumers
 set.seed(1)
 p <- xts(chart1.data$LoanOutstanding, chart1.data$Year, by='years')
 colnames(p) <- "LoanOutstanding"
+p$Year <- chart1.data$Year %>% format("%Y")
 avg.cpi <- apply.yearly(CPIAUCSL, mean)
 cf <- avg.cpi/as.numeric(avg.cpi['2008']) #using 2008 as the base year
-dat <- merge(p, cf, all=FALSE)
-dat$adj <- dat[, 1] * dat[, 2]
+cf.df <- data.frame(cf %>% as.data.frame(stringsAsFactors = FALSE) %>% rownames %>% substr(1, 4),
+                    cf %>% as.data.frame,
+                    row.names = NULL, stringsAsFactors = FALSE)
+colnames(cf.df) <- c("Year", "Adj")
+p.df <- p %>% as.data.frame
+
+adjustUSD <- function(year, dollars) {
+  adj.rate <- cf.df[cf.df$Year == year,'Adj']
+  dollars * adj.rate
+}
+
+adjusted.usd <- c()
+for (row.num in 1:nrow(p.df)) {
+  row.loan <- p.df$LoanOutstanding[row.num]
+  row.year <- p.df$Year[row.num]
+  adjusted.usd <- c(adjusted.usd, adjustUSD(row.year, row.loan))
+}
+
+p$Adj <- adjusted.usd
+
+adjusted.df.total <- data.frame(p.df %>% row.names %>% substr(1, 10) %>% ymd,
+                          adjusted.usd)
+colnames(adjusted.df.total) <- c("Date", "AdjOutstanding")
+
+# aaaand chart 2
+
+q <- xts(chart2.data$LoanOutstanding, chart2.data$Year, by='years')
+colnames(q) <- "LoanOutstanding"
+q$Year <- chart2.data$Year %>% format("%Y")
+q.df <- q %>% as.data.frame
+
+adjusted.usd <- c()
+for (row.num in 1:nrow(q.df)) {
+  row.loan <- q.df$LoanOutstanding[row.num]
+  row.year <- q.df$Year[row.num]
+  adjusted.usd <- c(adjusted.usd, adjustUSD(row.year, row.loan))
+}
+
+q$Adj <- adjusted.usd
+
+adjusted.df.per.grad <- data.frame(q.df %>% row.names %>% substr(1, 10) %>% ymd,
+                          adjusted.usd)
+colnames(adjusted.df.per.grad) <- c("Date", "AdjOutstanding")
+
+
+# Save data
+
+write.csv(adjusted.df.per.grad, "chart1_data_adjusted.csv")
+write.csv(adjusted.df.total, "chart2_data_adjusted.csv")
