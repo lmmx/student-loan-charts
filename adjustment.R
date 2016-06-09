@@ -68,5 +68,5 @@ colnames(adjusted.df.per.grad) <- c("Date", "AdjOutstanding")
 
 # Save data
 
-write.csv(adjusted.df.per.grad, "chart1_data_adjusted.csv")
-write.csv(adjusted.df.total, "chart2_data_adjusted.csv")
+write.csv(adjusted.df.per.grad, "chart1_data_adjusted.csv", row.names = FALSE)
+write.csv(adjusted.df.total, "chart2_data_adjusted.csv", row.names = FALSE)
